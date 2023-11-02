@@ -14,6 +14,12 @@ using System.Text;
 
 namespace XafImportApiWithTest.Module.BusinessObjects
 {
+    public enum TestEnum
+    {
+        Value1=1,
+        Value2=2,
+        Value3=3,
+    }
     [DefaultClassOptions]
     //[ImageName("BO_Contact")]
     //[DefaultProperty("DisplayMemberNameForLookupEditorsOfThisType")]
@@ -34,6 +40,7 @@ namespace XafImportApiWithTest.Module.BusinessObjects
             // Place your initialization code here (https://documentation.devexpress.com/eXpressAppFramework/CustomDocument112834.aspx).
         }
 
+        TestEnum testEnum;
         RefObject5 refProp5;
         RefObject4 refProp4;
         RefObject3 refProp3;
@@ -85,12 +92,18 @@ namespace XafImportApiWithTest.Module.BusinessObjects
             get => refProp4;
             set => SetPropertyValue(nameof(RefProp4), ref refProp4, value);
         }
-        
+
         public RefObject5 RefProp5
 
         {
             get => refProp5;
             set => SetPropertyValue(nameof(RefProp5), ref refProp5, value);
+        }
+        
+        public TestEnum TestEnum
+        {
+            get => testEnum;
+            set => SetPropertyValue(nameof(TestEnum), ref testEnum, value);
         }
     }
 }

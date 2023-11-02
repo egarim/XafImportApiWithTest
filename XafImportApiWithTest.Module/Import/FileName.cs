@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using DevExpress.Spreadsheet;
 using DevExpress.XtraPrinting.Native;
 using System.IO;
+using DevExpress.XtraSpreadsheet.Import.Xls;
 
 
 namespace XafImportApiWithTest.Module.Import
@@ -29,6 +30,7 @@ namespace XafImportApiWithTest.Module.Import
         public PropertyKind PropertyKind { get; set; }
         public string ReferencePropertyLookup { get; set; }
         public bool IsBusinessKey { get; set; }
+  
     }
     public class RowDef
     {
@@ -64,15 +66,19 @@ namespace XafImportApiWithTest.Module.Import
     public class ImportService
     {
         List<XPCollection> objectsToUpdate = null;
+    
         public ImportResult Import(IObjectSpace objectSpace, RowDef rowDef, ImportMode importMode)
         {
+            int CurrentRowNumber = 0;
+            int CurrentColumnNumber = 0;
+            object CurrentValue;
             ImportResult importResult = new ImportResult();
             try
             {
                 DateTime startTime = DateTime.Now;
                 int ImportedObjects = 0;
-                int CurrentPropertyIndex = 0;
-                int CurrentRowNumber = 0;
+               
+
                 BinaryOperator CurrentOperator = null;
 
                 List<KeyValuePair<int, PropertyInfo>> RefProperties = rowDef.Properties.Where(p => p.Value.PropertyKind == PropertyKind.Reference).ToList();
@@ -123,27 +129,48 @@ namespace XafImportApiWithTest.Module.Import
                     var Instance = GetObjectInstance(objectSpace, rowDef.ObjectType, TypesInfo, importMode, KeyValue, KeyProperty.Value?.PropertyName) as XPCustomObject;
 
                     IndexObject.Add(CurrentRowNumber, Instance);
+                    CurrentColumnNumber = 0;
+
                     for (int i = 0; i < Row.Count; i++)
                     {
-
+                        CurrentColumnNumber = i;
+                        CurrentValue = Row[i];
 #if DEBUG
 
                         Debug.WriteLine($"Current Index:{i} Current Property{rowDef.Properties[i].PropertyName}");
 #endif
 
 
-                        if (rowDef.Properties[i].PropertyKind == PropertyKind.Primitive)
-                            Instance.SetMemberValue(rowDef.Properties[i].PropertyName, Row[i]);
-                        else
+                       
+                        switch (rowDef.Properties[i].PropertyKind)
                         {
-                            CurrentOperator = new BinaryOperator(rowDef.Properties[i].ReferencePropertyLookup, Row[i]);
-                            PropertyInfo propertyInfo = rowDef.Properties[i];
-
-                            List<XPCollection> xPCollections = Collections[propertyInfo];
-                            object CurrentValue = GetValueFromCollection(CurrentOperator, xPCollections);
-                            Instance.SetMemberValue(rowDef.Properties[i].PropertyName, CurrentValue);
-
+                            case PropertyKind.Primitive:
+                                Instance.SetMemberValue(rowDef.Properties[i].PropertyName, CurrentValue);
+                                break;
+                            case PropertyKind.Reference:
+                                CurrentOperator = new BinaryOperator(rowDef.Properties[i].ReferencePropertyLookup, CurrentValue);
+                                PropertyInfo propertyInfo = rowDef.Properties[i];
+                                List<XPCollection> xPCollections = Collections[propertyInfo];
+                                CurrentValue = GetValueFromCollection(CurrentOperator, xPCollections);
+                                Instance.SetMemberValue(rowDef.Properties[i].PropertyName, CurrentValue);
+                                break;
+                            case PropertyKind.Enum:
+                                var EnumTypeInfo = TypesInfo.FindTypeInfo(rowDef.Properties[i].PropertyType);
+                                Instance.SetMemberValue(rowDef.Properties[i].PropertyName, Enum.Parse(EnumTypeInfo.Type, CurrentValue.ToString()));
+                                break;
                         }
+                        //if (rowDef.Properties[i].PropertyKind == PropertyKind.Primitive)
+                        //    Instance.SetMemberValue(rowDef.Properties[i].PropertyName, Row[i]);
+                        //else
+                        //{
+                        //    CurrentOperator = new BinaryOperator(rowDef.Properties[i].ReferencePropertyLookup, Row[i]);
+                        //    PropertyInfo propertyInfo = rowDef.Properties[i];
+
+                        //    List<XPCollection> xPCollections = Collections[propertyInfo];
+                        //    object CurrentValue = GetValueFromCollection(CurrentOperator, xPCollections);
+                        //    Instance.SetMemberValue(rowDef.Properties[i].PropertyName, CurrentValue);
+
+                        //}
                     }
 
                     CurrentRowNumber++;
@@ -174,7 +201,7 @@ namespace XafImportApiWithTest.Module.Import
             catch (Exception ex)
             {
 
-                throw;
+                throw new Exception($"Error on row {CurrentRowNumber} and column {CurrentColumnNumber} with value {CurrentValue}", ex);
             }
 
             return importResult;
@@ -322,7 +349,13 @@ namespace XafImportApiWithTest.Module.Import
     }
     public class SpreadsheetService
     {
-        
+        public Workbook LoadWorkbookFromBytes(byte[] data, DocumentFormat documentFormat)
+        {
+            Workbook workbook = new Workbook();
+
+            workbook.LoadDocument(new MemoryStream(data), documentFormat);
+            return workbook;
+        }
         public SpreadsheetService()
         {
             
@@ -412,7 +445,11 @@ namespace XafImportApiWithTest.Module.Import
                 }
                 else
                 {
-                    rowDef.Properties.Add(Index, new PropertyInfo() { PropertyName = PropertyAndPaths.Key, PropertyType = PropertyAndPaths.Value.Last().PropertyType.FullName, PropertyKind = PropertyKind.Primitive });
+                    PropertyKind propertyKind= PropertyKind.Primitive; ;
+                    if(PropertyAndPaths.Value.Last().PropertyType.IsEnum)
+                        propertyKind= PropertyKind.Enum;
+
+                    rowDef.Properties.Add(Index, new PropertyInfo() { PropertyName = PropertyAndPaths.Key, PropertyType = PropertyAndPaths.Value.Last().PropertyType.FullName, PropertyKind = propertyKind });
                 }
                 Index++;
             }
