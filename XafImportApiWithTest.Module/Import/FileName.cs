@@ -71,7 +71,7 @@ namespace XafImportApiWithTest.Module.Import
         {
             int CurrentRowNumber = 0;
             int CurrentColumnNumber = 0;
-            object CurrentValue;
+            object CurrentValue=null;
             ImportResult importResult = new ImportResult();
             try
             {
@@ -445,8 +445,8 @@ namespace XafImportApiWithTest.Module.Import
                 }
                 else
                 {
-                    PropertyKind propertyKind= PropertyKind.Primitive; ;
-                    if(PropertyAndPaths.Value.Last().PropertyType.IsEnum)
+                    PropertyKind propertyKind= PropertyKind.Primitive;
+                    if (PropertyAndPaths.Value.Last().PropertyType.IsEnum)
                         propertyKind= PropertyKind.Enum;
 
                     rowDef.Properties.Add(Index, new PropertyInfo() { PropertyName = PropertyAndPaths.Key, PropertyType = PropertyAndPaths.Value.Last().PropertyType.FullName, PropertyKind = propertyKind });
@@ -465,7 +465,42 @@ namespace XafImportApiWithTest.Module.Import
 
             return propertyDetails;
         }
+        public static class NullableChecker
+        {
+            public static bool IsNullable(System.Reflection.PropertyInfo propertyInfo)
+            {
+                // Check if the property is a Nullable value type.
+                if (Nullable.GetUnderlyingType(propertyInfo.PropertyType) != null)
+                {
+                    return true;
+                }
 
+                // Check for reference type or Nullable reference type (C# 8.0+ feature).
+                // If the project does not use nullable reference types, this part can be omitted.
+                if (!propertyInfo.PropertyType.IsValueType)
+                {
+                    // Check for nullable attribute.
+                    var nullableAttribute = propertyInfo.CustomAttributes
+                        .FirstOrDefault(attr => attr.AttributeType.FullName == "System.Runtime.CompilerServices.NullableAttribute");
+                    if (nullableAttribute != null && nullableAttribute.ConstructorArguments.Count > 0)
+                    {
+                        var attributeArgument = (byte[])nullableAttribute.ConstructorArguments[0].Value;
+                        if (attributeArgument.Length > 0 && attributeArgument[0] == 2)
+                        {
+                            return true; // Property is annotated as nullable reference type.
+                        }
+                    }
+                    else
+                    {
+                        // If the nullable context is not enabled or the property is not annotated,
+                        // reference types are considered nullable by default.
+                        return true;
+                    }
+                }
+
+                return false; // The property is non-nullable value type or non-nullable reference type.
+            }
+        }
         public static List<PropertyDetails> GetPropertyDetails(string propertyPath,Type currentType)
         {
             var detailsList = new List<PropertyDetails>();
@@ -475,6 +510,25 @@ namespace XafImportApiWithTest.Module.Import
             foreach (string propertyName in properties)
             {
                 System.Reflection.PropertyInfo propertyInfo = currentType.GetProperty(propertyName);
+                bool isNullable = NullableChecker.IsNullable(propertyInfo);
+                Type PropertyType = null; ;
+                if (isNullable)
+                {
+                  
+                    PropertyType = Nullable.GetUnderlyingType(propertyInfo.PropertyType);
+                    if(PropertyType==null)
+                    {
+                        PropertyType = propertyInfo.PropertyType;
+                    }
+                }
+                else
+                {
+                    PropertyType = propertyInfo.PropertyType;
+                }
+               
+              
+
+
                 if (propertyInfo == null)
                 {
                     throw new Exception($"Property {propertyName} not found on {currentType.Name}.");
@@ -483,7 +537,7 @@ namespace XafImportApiWithTest.Module.Import
                 var details = new PropertyDetails
                 {
                     OwnerType = currentType,
-                    PropertyType = propertyInfo.PropertyType,
+                    PropertyType = PropertyType,//propertyInfo.PropertyType,
                     PropertyName = propertyInfo.Name
                 };
                 detailsList.Add(details);

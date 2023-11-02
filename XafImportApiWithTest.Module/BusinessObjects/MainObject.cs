@@ -40,6 +40,7 @@ namespace XafImportApiWithTest.Module.BusinessObjects
             // Place your initialization code here (https://documentation.devexpress.com/eXpressAppFramework/CustomDocument112834.aspx).
         }
 
+        TestEnum? testEnumNullable;
         TestEnum testEnum;
         RefObject5 refProp5;
         RefObject4 refProp4;
@@ -99,11 +100,17 @@ namespace XafImportApiWithTest.Module.BusinessObjects
             get => refProp5;
             set => SetPropertyValue(nameof(RefProp5), ref refProp5, value);
         }
-        
+
         public TestEnum TestEnum
         {
             get => testEnum;
             set => SetPropertyValue(nameof(TestEnum), ref testEnum, value);
+        }
+        
+        public TestEnum? TestEnumNullable
+        {
+            get => testEnumNullable;
+            set => SetPropertyValue(nameof(TestEnumNullable), ref testEnumNullable, value);
         }
     }
 }
