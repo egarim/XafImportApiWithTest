@@ -11,13 +11,16 @@ using DevExpress.ExpressApp.Templates;
 using DevExpress.ExpressApp.Utils;
 using DevExpress.Persistent.Base;
 using DevExpress.Persistent.Validation;
+using DevExpress.PivotGrid.OLAP.SchemaEntities;
 using DevExpress.Spreadsheet;
 using DevExpress.Utils.Extensions;
+using DevExpress.Xpo;
 using DevExpress.XtraRichEdit.Model;
 using DevExpress.XtraSpreadsheet;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Windows.Media;
@@ -82,27 +85,25 @@ namespace XafImportApiWithTest.Win.Controllers
 						values.Add(row[rowProperty.Key]);
 					};
 					CriteriaOperator criteria = new InOperator(rowProperty.Value.ReferencePropertyLookup, values);
-					var objectData = objectSpace.GetObjects(propertyType, criteria);
-					var firstObject = objectData[0];
-					var propertyNames = firstObject?.GetType()
-						.GetProperties()
-						.Select(p => p.Name)
-						.Where(e =>  e != "This" && e != "Loading" && e != "ClassInfo" && e != "Session" && e != "IsLoading" && e != "IsDeleted")
-						.ToArray();
 
+					string connectionString = this.Application.ConnectionString;
+					var connectionProvider = XpoDefault.GetConnectionProvider(connectionString, DevExpress.Xpo.DB.AutoCreateOption.SchemaAlreadyExists);
+					SimpleDataLayer simpleDataLayer = new SimpleDataLayer(connectionProvider);
+					UnitOfWork unitOfWork = new UnitOfWork(simpleDataLayer);
+					var View = propertyType.CreateViewWithProperties(unitOfWork, null);
+					
+					List<string> propertyNamesList = new List<string>();
+					List<object> objectData = new List<object>();
 
-					for (int columnIndex = 0; columnIndex < propertyNames.Length; columnIndex++)
+					foreach (ViewRecord record in View)
 					{
-						destinationWorksheet.Cells[0, columnIndex].Value = propertyNames[columnIndex];
+						objectData.Add(record[rowProperty.Value.ReferencePropertyLookup]);
 					}
 
-					var importOptions = new DataSourceImportOptions()
-					{
-						PropertyNames = propertyNames
-					};
+					destinationWorksheet.Cells[0, 0].Value = rowProperty.Value.ReferencePropertyLookup;
 
 
-					destinationWorksheet.Import(objectData, 1, 0, importOptions);
+					destinationWorksheet.Import(objectData, 1, 0, true);
 
 				}
 			}
