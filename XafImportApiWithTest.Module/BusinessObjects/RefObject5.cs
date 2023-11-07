@@ -35,7 +35,7 @@ namespace XafImportApiWithTest.Module.BusinessObjects
             // Place your initialization code here (https://documentation.devexpress.com/eXpressAppFramework/CustomDocument112834.aspx).
         }
         string code;
-
+        [Indexed]
         [Size(SizeAttribute.DefaultStringMappingFieldSize)]
         public string Code
         {

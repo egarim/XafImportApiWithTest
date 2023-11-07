@@ -35,7 +35,7 @@ namespace XafImportApiWithTest.Module.BusinessObjects
         }
 
         string code;
-
+        [Indexed]
         [Size(SizeAttribute.DefaultStringMappingFieldSize)]
         public string Code
         {
