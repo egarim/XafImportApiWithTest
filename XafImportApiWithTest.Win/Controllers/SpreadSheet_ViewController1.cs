@@ -2,6 +2,7 @@
 using DevExpress.Data.Filtering;
 using DevExpress.ExpressApp;
 using DevExpress.ExpressApp.Actions;
+using DevExpress.ExpressApp.DC;
 using DevExpress.ExpressApp.Editors;
 using DevExpress.ExpressApp.Layout;
 using DevExpress.ExpressApp.Model.NodeGenerators;
@@ -19,9 +20,11 @@ using DevExpress.XtraRichEdit.Model;
 using DevExpress.XtraSpreadsheet;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Windows.Media;
 using XafImportApiWithTest.Module.BusinessObjects;
@@ -80,6 +83,7 @@ namespace XafImportApiWithTest.Win.Controllers
 					System.Reflection.PropertyInfo propertyInfo = mainObjectType.GetProperty(propertyName);
 					Type propertyType = propertyInfo.PropertyType;
 					List<object> values = new List<object>();
+
 					foreach (var row in RowDef.Rows)
 					{
 						values.Add(row[rowProperty.Key]);
@@ -92,15 +96,17 @@ namespace XafImportApiWithTest.Win.Controllers
 					UnitOfWork unitOfWork = new UnitOfWork(simpleDataLayer);
 					var View = propertyType.CreateViewWithProperties(unitOfWork, null);
 					
-					List<string> propertyNamesList = new List<string>();
 					List<object> objectData = new List<object>();
 
+					var defaultPropertyAttribute = View.ObjectClassInfo.FindAttributeInfo(typeof(DefaultPropertyAttribute)) as DefaultPropertyAttribute;
+					string defaultProperty = defaultPropertyAttribute != null ? defaultPropertyAttribute.Name : rowProperty.Value.ReferencePropertyLookup;
+					
 					foreach (ViewRecord record in View)
 					{
-						objectData.Add(record[rowProperty.Value.ReferencePropertyLookup]);
+						objectData.Add(record[defaultProperty]);
 					}
-
-					destinationWorksheet.Cells[0, 0].Value = rowProperty.Value.ReferencePropertyLookup;
+					
+					destinationWorksheet.Cells[0, 0].Value = defaultProperty;
 
 
 					destinationWorksheet.Import(objectData, 1, 0, true);
