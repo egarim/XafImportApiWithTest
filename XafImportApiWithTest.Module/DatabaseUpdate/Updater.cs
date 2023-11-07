@@ -36,6 +36,78 @@ public class Updater : ModuleUpdater {
             }
         }
 
+        if(this.ObjectSpace.GetObjectsCount(typeof(BusinessObjects.Country), null) == 0)
+        {
+            var Italy = this.ObjectSpace.CreateObject<BusinessObjects.Country>();
+            Italy.Name = "Italy";
+            Italy.Code = "C003";
+
+            var Russia = this.ObjectSpace.CreateObject<BusinessObjects.Country>();
+            Russia.Name = "Russia";
+            Russia.Code = "C001";
+
+            var Belarus = this.ObjectSpace.CreateObject<BusinessObjects.Country>();
+            Belarus.Name = "Belarus";
+            Belarus.Code = "C002";
+
+            var Minsk = this.ObjectSpace.CreateObject<BusinessObjects.City>();
+            Minsk.Name = "Minsk";
+            Minsk.Code = "C001";
+            Minsk.Country= Belarus;
+
+            var Moscow = this.ObjectSpace.CreateObject<BusinessObjects.City>();
+            Moscow.Name = "Moscow";
+            Moscow.Code = "C002";
+            Moscow.Country = Russia;
+
+            var Rome = this.ObjectSpace.CreateObject<BusinessObjects.City>();
+            Rome.Name = "Rome";
+            Rome.Code = "C003";
+            Rome.Country = Italy;
+
+            var Pizzeria= this.ObjectSpace.CreateObject<BusinessObjects.Location>();
+            Pizzeria.Name = "Pizzeria";
+            Pizzeria.Code = "C001";
+            Pizzeria.City = Rome;
+
+            var Restaurant = this.ObjectSpace.CreateObject<BusinessObjects.Location>();
+            Restaurant.Name = "Restaurant";
+            Restaurant.Code = "C002";
+            Restaurant.City = Moscow;
+
+            var Bar = this.ObjectSpace.CreateObject<BusinessObjects.Location>();
+            Bar.Name = "Bar";
+            Bar.Code = "C003";
+            Bar.City = Minsk;
+
+            var Jose= this.ObjectSpace.CreateObject<BusinessObjects.Person>();
+            Jose.Name = "Jose";
+            Jose.LastName = "Ojeda";
+
+            var Alina= this.ObjectSpace.CreateObject<BusinessObjects.Person>();
+            Alina.Name = "Alina";
+            Alina.LastName = "Lukashova";
+
+            var Daniel = this.ObjectSpace.CreateObject<BusinessObjects.Person>();
+            Daniel.Name = "Daniel";
+            Daniel.LastName = "Correa";
+
+            var Lidia= this.ObjectSpace.CreateObject<BusinessObjects.Person>();
+            Lidia.Name = "Lidia";
+            Lidia.LastName = "Norinsk";
+
+            var Jaime= this.ObjectSpace.CreateObject<BusinessObjects.Person>();
+            Jaime.Name = "Jaime";
+            Jaime.LastName = "Macias";
+
+            var Ceci= this.ObjectSpace.CreateObject<BusinessObjects.Person>();
+            Ceci.Name = "Ceci";
+            Ceci.LastName = "Flores";
+
+
+
+        }
+
         ObjectSpace.CommitChanges(); //Uncomment this line to persist created object(s).
     }
     void CreateRefObject(Type type, string Code)

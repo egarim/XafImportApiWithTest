@@ -431,7 +431,7 @@ namespace XafImportApiWithTest.Module.Import
         {
             Dictionary<string, List<PropertyDetails>> propertyDetails = GetPropertyDetails(spreadSheetType, Headers);
 
-            //var typeInfo = typesInfo.FindTypeInfo(spreadSheetType);
+            
 
             int Index = 0;
             foreach (KeyValuePair<string, List<PropertyDetails>> PropertyAndPaths in propertyDetails)
@@ -547,7 +547,7 @@ namespace XafImportApiWithTest.Module.Import
 
             return detailsList;
         }
-        public List<string> GetHeaders(Worksheet worksheet)
+        public static List<string> GetHeaders(Worksheet worksheet)
         {
 
             List<string> Headers = new List<string>();
