@@ -547,7 +547,7 @@ namespace XafImportApiWithTest.Module.Import
 
             return detailsList;
         }
-        List<string> GetHeaders(Worksheet worksheet)
+        public List<string> GetHeaders(Worksheet worksheet)
         {
 
             List<string> Headers = new List<string>();
