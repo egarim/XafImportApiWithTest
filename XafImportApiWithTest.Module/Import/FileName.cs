@@ -397,19 +397,13 @@ namespace XafImportApiWithTest.Module.Import
                     {
 
 
-                        sheetData.Properties.Add(PropertyDetail.Key, CurrentPropertyDetail);
+                        //sheetData.Properties.Add(PropertyDetail.Key, CurrentPropertyDetail);
+                        sheetData.Properties.Add(GetPropertyPath(PropertyDetail, CurrentPropertyDetail), CurrentPropertyDetail);
 
                     }
                     else
                     {
-                        var PropertySegments = PropertyDetail.Key.Split('.').ToList();
-                        var CurrentSegmentIndex = PropertySegments.IndexOf(CurrentPropertyDetail.PropertyName);
-                        List<string> strings = new List<string>();
-                        for (int psi = CurrentSegmentIndex; psi < PropertySegments.Count; psi++)
-                        {
-                            strings.Add(PropertySegments[psi]);
-                        }
-                        string PropertyPath = string.Join(".", strings);
+                        string PropertyPath = GetPropertyPath(PropertyDetail, CurrentPropertyDetail);
                         SheetData item = new SheetData(CurrentPropertyDetail.OwnerType, PropertyDetail.Key);
                         item.Properties.Add(PropertyPath, CurrentPropertyDetail);
                         SheetData.Add(item);
@@ -422,7 +416,18 @@ namespace XafImportApiWithTest.Module.Import
             return SheetData;
         }
 
-
+        private static string GetPropertyPath(KeyValuePair<string, List<PropertyDetail>> PropertyDetail, PropertyDetail CurrentPropertyDetail)
+        {
+            var PropertySegments = PropertyDetail.Key.Split('.').ToList();
+            var CurrentSegmentIndex = PropertySegments.IndexOf(CurrentPropertyDetail.PropertyName);
+            List<string> strings = new List<string>();
+            for (int psi = CurrentSegmentIndex; psi < PropertySegments.Count; psi++)
+            {
+                strings.Add(PropertySegments[psi]);
+            }
+            string PropertyPath = string.Join(".", strings);
+            return PropertyPath;
+        }
 
         public RowDef GetData(Worksheet worksheet, ITypesInfo typesInfo, Type spreadSheetType)
         {
