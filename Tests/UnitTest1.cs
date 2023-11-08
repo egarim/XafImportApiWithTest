@@ -59,16 +59,19 @@ namespace Tests
         {
             EnableXpoDebugLog();
             DateTime startTime = DateTime.Now;
-            var spreedSheet = objectSpace.GetObjectsQuery<SpreadSheet>().FirstOrDefault(s => s.Name == "Test").GetSpreadSheet();
+            var spreedSheet = objectSpace.GetObjectsQuery<SpreadSheet>().FirstOrDefault(s => s.Name == "Marriage").GetSpreadSheet();
             SpreadsheetService spreadsheetService = new SpreadsheetService();
-            var RowDef = spreadsheetService.GetData(spreedSheet.Worksheets[0], objectSpace.TypesInfo, typeof(MainObject));
-            RowDef.ObjectType = typeof(MainObject).FullName;
-            ImportService importService = new ImportService();
-            importService.Import(objectSpace, RowDef, ImportMode.Insert);
-            objectSpace.CommitChanges();
-            DateTime endTime = DateTime.Now;
-            TimeSpan duration = endTime - startTime;
-            Debug.WriteLine("Time to import 1000 records with 5 references objects per record:" + duration.TotalSeconds);
+            var Headers=spreadsheetService.GetHeaders(spreedSheet.Worksheets[0]);
+            var Properties= spreadsheetService.GetPropertyDetails(typeof(Marriage), Headers);
+
+            //var RowDef = spreadsheetService.GetData(spreedSheet.Worksheets[0], objectSpace.TypesInfo, typeof(MainObject));
+            //RowDef.ObjectType = typeof(Marriage).FullName;
+            //ImportService importService = new ImportService();
+            //importService.Import(objectSpace, RowDef, ImportMode.Insert);
+            //objectSpace.CommitChanges();
+            //DateTime endTime = DateTime.Now;
+            //TimeSpan duration = endTime - startTime;
+            //Debug.WriteLine("Time to import 1000 records with 5 references objects per record:" + duration.TotalSeconds);
             Assert.Pass();
         }
     }

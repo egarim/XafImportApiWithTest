@@ -40,6 +40,7 @@ namespace XafImportApiWithTest.Module.BusinessObjects
             get => code;
             set => SetPropertyValue(nameof(Code), ref code, value);
         }
+        Location location;
         string code;
         Person person2;
         Person person1;
@@ -49,11 +50,17 @@ namespace XafImportApiWithTest.Module.BusinessObjects
             get => person1;
             set => SetPropertyValue(nameof(Person1), ref person1, value);
         }
-        
+
         public Person Person2
         {
             get => person2;
             set => SetPropertyValue(nameof(Person2), ref person2, value);
+        }
+        
+        public Location Location
+        {
+            get => location;
+            set => SetPropertyValue(nameof(Location), ref location, value);
         }
     }
 }

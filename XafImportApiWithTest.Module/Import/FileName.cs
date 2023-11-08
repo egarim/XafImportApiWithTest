@@ -427,7 +427,7 @@ namespace XafImportApiWithTest.Module.Import
             allRowsData.Remove(allRowsData.First());
             return allRowsData;
         }
-        private static void GetRowDefinitionProperties(Type spreadSheetType, List<string> Headers, RowDef rowDef)
+        private  void GetRowDefinitionProperties(Type spreadSheetType, List<string> Headers, RowDef rowDef)
         {
             Dictionary<string, List<PropertyDetails>> propertyDetails = GetPropertyDetails(spreadSheetType, Headers);
 
@@ -455,7 +455,7 @@ namespace XafImportApiWithTest.Module.Import
             }
         }
 
-        private static Dictionary<string, List<PropertyDetails>> GetPropertyDetails(Type spreadSheetType, List<string> Headers)
+        public Dictionary<string, List<PropertyDetails>> GetPropertyDetails(Type spreadSheetType, List<string> Headers)
         {
             Dictionary<string, List<PropertyDetails>> propertyDetails = new Dictionary<string, List<PropertyDetails>>();
             foreach (var item in Headers)
@@ -501,7 +501,14 @@ namespace XafImportApiWithTest.Module.Import
                 return false; // The property is non-nullable value type or non-nullable reference type.
             }
         }
-        public static List<PropertyDetails> GetPropertyDetails(string propertyPath,Type currentType)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="propertyPath">The path to a property, example Product.Category.Name</param>
+        /// <param name="currentType">The owner type</param>
+        /// <returns></returns>
+        /// <exception cref="Exception">Throws an exception if a property is not found in a type</exception>
+        public List<PropertyDetails> GetPropertyDetails(string propertyPath,Type currentType)
         {
             var detailsList = new List<PropertyDetails>();
             string[] properties = propertyPath.Split('.');
@@ -510,6 +517,11 @@ namespace XafImportApiWithTest.Module.Import
             foreach (string propertyName in properties)
             {
                 System.Reflection.PropertyInfo propertyInfo = currentType.GetProperty(propertyName);
+
+                if(propertyInfo==null)
+                    throw new Exception($"Property {propertyName} not found on {currentType.Name}.");
+
+
                 bool isNullable = NullableChecker.IsNullable(propertyInfo);
                 Type PropertyType = null; ;
                 if (isNullable)
@@ -547,7 +559,7 @@ namespace XafImportApiWithTest.Module.Import
 
             return detailsList;
         }
-        public static List<string> GetHeaders(Worksheet worksheet)
+        public List<string> GetHeaders(Worksheet worksheet)
         {
 
             List<string> Headers = new List<string>();
