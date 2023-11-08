@@ -15,10 +15,28 @@ using DevExpress.XtraPrinting.Native;
 using System.IO;
 using DevExpress.XtraSpreadsheet.Import.Xls;
 using XafImportApiWithTest.Module.BusinessObjects;
+using DevExpress.Office.Utils;
 
 
 namespace XafImportApiWithTest.Module.Import
 {
+    public class SheetData
+    {
+        public SheetData(Type dd)
+        {
+            Type = dd;
+        }
+        public SheetData(Type type, string mainSheetProperty)
+        {
+            Type = type;
+            MainSheetProperty = mainSheetProperty;
+        }
+        public Type Type { get; set; }
+        public string MainSheetProperty { get; set; }
+
+        public Dictionary<string,PropertyDetail> Properties { get; set; } = new Dictionary<string, PropertyDetail>();
+
+    }
     public enum PropertyKind
     {
         Primitive, Reference, Enum,
@@ -362,6 +380,50 @@ namespace XafImportApiWithTest.Module.Import
 
         }
 
+        public List<SheetData> GetNestedSheetStructure(Dictionary<string, List<PropertyDetail>> PropertyDetails)
+        {
+            List<SheetData> SheetData = new List<SheetData>();
+            foreach (KeyValuePair<string, List<PropertyDetail>> PropertyDetail in PropertyDetails)
+            {
+                if (PropertyDetail.Value.Count <= 1)
+                    continue;
+
+                for (int i = 1; i < PropertyDetail.Value.Count; i++)
+                {
+                    PropertyDetail CurrentPropertyDetail = PropertyDetail.Value[i];
+
+                    SheetData sheetData = SheetData.FirstOrDefault(sd => sd.Type == CurrentPropertyDetail.OwnerType);
+                    if (sheetData != null)
+                    {
+
+
+                        sheetData.Properties.Add(PropertyDetail.Key, CurrentPropertyDetail);
+
+                    }
+                    else
+                    {
+                        var PropertySegments = PropertyDetail.Key.Split('.').ToList();
+                        var CurrentSegmentIndex = PropertySegments.IndexOf(CurrentPropertyDetail.PropertyName);
+                        List<string> strings = new List<string>();
+                        for (int psi = CurrentSegmentIndex; psi < PropertySegments.Count; psi++)
+                        {
+                            strings.Add(PropertySegments[psi]);
+                        }
+                        string PropertyPath = string.Join(".", strings);
+                        SheetData item = new SheetData(CurrentPropertyDetail.OwnerType, PropertyDetail.Key);
+                        item.Properties.Add(PropertyPath, CurrentPropertyDetail);
+                        SheetData.Add(item);
+                    }
+
+                }
+
+              
+            }
+            return SheetData;
+        }
+
+
+
         public RowDef GetData(Worksheet worksheet, ITypesInfo typesInfo, Type spreadSheetType)
         {
             var Headers = GetHeaders(worksheet);
@@ -455,7 +517,7 @@ namespace XafImportApiWithTest.Module.Import
                 Index++;
             }
         }
-
+     
         public List<Type> GetPropertyDetailsUniqueTypes(Type spreadSheetType, List<string> Headers)
         {
 

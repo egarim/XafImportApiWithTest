@@ -60,25 +60,15 @@ namespace Tests
         {
             EnableXpoDebugLog();
             DateTime startTime = DateTime.Now;
-            var spreedSheet = objectSpace.GetObjectsQuery<SpreadSheet>().FirstOrDefault(s => s.Name == "Marriage").GetSpreadSheet();
+            var Spreadsheet = objectSpace.GetObjectsQuery<SpreadSheet>().FirstOrDefault(s => s.Name == "Marriage").GetSpreadSheet();
             SpreadsheetService spreadsheetService = new SpreadsheetService();
-            var Headers = spreadsheetService.GetHeaders(spreedSheet.Worksheets[0]);
-            var PropertyDetails=spreadsheetService.GetPropertyDetails(typeof(Marriage), Headers);
+            var Headers = spreadsheetService.GetHeaders(Spreadsheet.Worksheets[0]);
+            var PropertyDetails = spreadsheetService.GetPropertyDetails(typeof(Marriage), Headers);
             var UniqueTypes = spreadsheetService.GetPropertyDetailsUniqueTypes(typeof(Marriage), Headers);
-
-           
-
-            Dictionary<Type,List<PropertyDetail>> PropertyDetailsPerType = new Dictionary<Type, List<PropertyDetail>>();
-            foreach (Type type in UniqueTypes)
-            {
-                var Details = PropertyDetails.SelectMany(p => p.Value).Where(p=>p.OwnerType==type).ToList();
-                PropertyDetailsPerType.Add(type, Details);    
-                //return Types.SelectMany(t => t).Distinct().ToList();
-            }
-
-           
-
+            var NestedSheetStructure=spreadsheetService.GetNestedSheetStructure(PropertyDetails);
+         
             Assert.Pass();
         }
+
     }
 }
