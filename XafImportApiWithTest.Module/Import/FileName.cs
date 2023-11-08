@@ -463,7 +463,9 @@ namespace XafImportApiWithTest.Module.Import
 
             IEnumerable<IEnumerable<Type>> Types = Properties.Select(p => p.Value.Select(d => d.OwnerType));
 
-            return Types.SelectMany(t => t).Distinct().ToList();
+            List<Type> types = Types.SelectMany(t => t).Distinct().ToList();
+            types.Remove(spreadSheetType);
+            return types;
         }
         public Dictionary<string, List<PropertyDetail>> GetPropertyDetails(Type spreadSheetType, List<string> Headers)
         {
@@ -471,6 +473,12 @@ namespace XafImportApiWithTest.Module.Import
 
             return GetPropertyDetails(spreadSheetType, Headers.ToArray());
         }
+        //public Dictionary<string, List<PropertyDetail>> GetPropertyDetails(Type spreadSheetType)
+        //{
+        //    List<string> Headers = new List<string>();
+        //    Headers
+        //    return GetPropertyDetails(spreadSheetType, Headers.ToArray());
+        //}
         public Dictionary<string, List<PropertyDetail>> GetPropertyDetails(Type spreadSheetType, params string[] Headers)
         {
             Dictionary<string, List<PropertyDetail>> propertyDetails = new Dictionary<string, List<PropertyDetail>>();

@@ -7,6 +7,7 @@ using XafImportApiWithTest.Module.Import;
 using DevExpress.Xpo.DB;
 using System.Diagnostics;
 using System.Reflection;
+using DevExpress.XtraRichEdit.Model;
 
 namespace Tests
 {
@@ -65,13 +66,17 @@ namespace Tests
             var PropertyDetails=spreadsheetService.GetPropertyDetails(typeof(Marriage), Headers);
             var UniqueTypes = spreadsheetService.GetPropertyDetailsUniqueTypes(typeof(Marriage), Headers);
 
-            foreach (KeyValuePair<string, List<PropertyDetail>> Property in PropertyDetails)
-            {
-                if (Property.Value.Count <= 1)
-                    continue;
+           
 
-                var Properties=  spreadsheetService.GetPropertyDetails(Property.Value[0].PropertyType, Property.Key);
+            Dictionary<Type,List<PropertyDetail>> PropertyDetailsPerType = new Dictionary<Type, List<PropertyDetail>>();
+            foreach (Type type in UniqueTypes)
+            {
+                var Details = PropertyDetails.SelectMany(p => p.Value).Where(p=>p.OwnerType==type).ToList();
+                PropertyDetailsPerType.Add(type, Details);    
+                //return Types.SelectMany(t => t).Distinct().ToList();
             }
+
+           
 
             Assert.Pass();
         }
