@@ -14,6 +14,7 @@ using DevExpress.Spreadsheet;
 using DevExpress.XtraPrinting.Native;
 using System.IO;
 using DevExpress.XtraSpreadsheet.Import.Xls;
+using XafImportApiWithTest.Module.BusinessObjects;
 
 
 namespace XafImportApiWithTest.Module.Import
@@ -23,19 +24,19 @@ namespace XafImportApiWithTest.Module.Import
         Primitive, Reference, Enum,
 
     }
-    public class PropertyInfo
+    public class CustomPropertyInfo
     {
         public string PropertyName { get; set; }
         public string PropertyType { get; set; }
         public PropertyKind PropertyKind { get; set; }
         public string ReferencePropertyLookup { get; set; }
         public bool IsBusinessKey { get; set; }
-  
+
     }
     public class RowDef
     {
         public string ObjectType { get; set; }
-        public Dictionary<int, PropertyInfo> Properties { get; set; } = new Dictionary<int, PropertyInfo>();
+        public Dictionary<int, CustomPropertyInfo> Properties { get; set; } = new Dictionary<int, CustomPropertyInfo>();
         public List<List<object>> Rows { get; set; } = new List<List<object>>();
     }
 
@@ -66,43 +67,43 @@ namespace XafImportApiWithTest.Module.Import
     public class ImportService
     {
         List<XPCollection> objectsToUpdate = null;
-    
+
         public ImportResult Import(IObjectSpace objectSpace, RowDef rowDef, ImportMode importMode)
         {
             int CurrentRowNumber = 0;
             int CurrentColumnNumber = 0;
-            object CurrentValue=null;
+            object CurrentValue = null;
             ImportResult importResult = new ImportResult();
             try
             {
                 DateTime startTime = DateTime.Now;
                 int ImportedObjects = 0;
-               
+
 
                 BinaryOperator CurrentOperator = null;
 
-                List<KeyValuePair<int, PropertyInfo>> RefProperties = rowDef.Properties.Where(p => p.Value.PropertyKind == PropertyKind.Reference).ToList();
+                List<KeyValuePair<int, CustomPropertyInfo>> RefProperties = rowDef.Properties.Where(p => p.Value.PropertyKind == PropertyKind.Reference).ToList();
                 var XpOs = objectSpace as XPObjectSpace;
                 ITypesInfo TypesInfo = XpOs.TypesInfo;
                 var PageSize = 1000;
                 var Pages = GetPageSize(rowDef, PageSize);
 
                 bool NoBusinessKey = true;
-                Dictionary<PropertyInfo, List<XPCollection>> Collections = new Dictionary<PropertyInfo, List<XPCollection>>();
+                Dictionary<CustomPropertyInfo, List<XPCollection>> Collections = new Dictionary<CustomPropertyInfo, List<XPCollection>>();
                 List<XPCollection> AllCollections = new List<XPCollection>();
 
-                KeyValuePair<int, PropertyInfo> Key = rowDef.Properties.FirstOrDefault(p => p.Value.IsBusinessKey);
-                KeyValuePair<int, PropertyInfo> KeyProperty = new KeyValuePair<int, PropertyInfo>();
+                KeyValuePair<int, CustomPropertyInfo> Key = rowDef.Properties.FirstOrDefault(p => p.Value.IsBusinessKey);
+                KeyValuePair<int, CustomPropertyInfo> KeyProperty = new KeyValuePair<int, CustomPropertyInfo>();
                 if (rowDef.Properties.Any(p => p.Value.IsBusinessKey))
                 {
 
                     NoBusinessKey = false;
-                    KeyProperty = new KeyValuePair<int, PropertyInfo>(Key.Key, new PropertyInfo() { PropertyName = Key.Value.PropertyName, PropertyType = rowDef.ObjectType, PropertyKind = PropertyKind.Reference, ReferencePropertyLookup = Key.Value.PropertyName });
+                    KeyProperty = new KeyValuePair<int, CustomPropertyInfo>(Key.Key, new CustomPropertyInfo() { PropertyName = Key.Value.PropertyName, PropertyType = rowDef.ObjectType, PropertyKind = PropertyKind.Reference, ReferencePropertyLookup = Key.Value.PropertyName });
                     objectsToUpdate = BuildCollection(KeyProperty, rowDef, XpOs.Session, TypesInfo, PageSize, Pages);
                 }
 
 
-                foreach (KeyValuePair<int, PropertyInfo> RefProp in RefProperties)
+                foreach (KeyValuePair<int, CustomPropertyInfo> RefProp in RefProperties)
                 {
                     List<XPCollection> value = BuildCollection(RefProp, rowDef, XpOs.Session, TypesInfo, PageSize, Pages);
                     foreach (XPCollection xPCollection in value)
@@ -141,7 +142,7 @@ namespace XafImportApiWithTest.Module.Import
 #endif
 
 
-                       
+
                         switch (rowDef.Properties[i].PropertyKind)
                         {
                             case PropertyKind.Primitive:
@@ -149,7 +150,7 @@ namespace XafImportApiWithTest.Module.Import
                                 break;
                             case PropertyKind.Reference:
                                 CurrentOperator = new BinaryOperator(rowDef.Properties[i].ReferencePropertyLookup, CurrentValue);
-                                PropertyInfo propertyInfo = rowDef.Properties[i];
+                                CustomPropertyInfo propertyInfo = rowDef.Properties[i];
                                 List<XPCollection> xPCollections = Collections[propertyInfo];
                                 CurrentValue = GetValueFromCollection(CurrentOperator, xPCollections);
                                 Instance.SetMemberValue(rowDef.Properties[i].PropertyName, CurrentValue);
@@ -274,7 +275,7 @@ namespace XafImportApiWithTest.Module.Import
 
         }
 
-        List<XPCollection> BuildCollection(KeyValuePair<int, PropertyInfo> RefProperties, RowDef rowDef, Session session, ITypesInfo TypesInfo, int pageSize, int pages)
+        List<XPCollection> BuildCollection(KeyValuePair<int, CustomPropertyInfo> RefProperties, RowDef rowDef, Session session, ITypesInfo TypesInfo, int pageSize, int pages)
         {
             List<XPCollection> collections = new List<XPCollection>();
             var CriteriaOperators = BuildCriteriaPages(RefProperties, rowDef, pageSize, pages);
@@ -308,14 +309,14 @@ namespace XafImportApiWithTest.Module.Import
             return collections;
 
         }
-        CriteriaOperator BuildCriteria(KeyValuePair<int, PropertyInfo> RefProperties, RowDef rowDef, int pageSize, int pages)
+        CriteriaOperator BuildCriteria(KeyValuePair<int, CustomPropertyInfo> RefProperties, RowDef rowDef, int pageSize, int pages)
         {
             List<CriteriaOperator> operators = BuildCriteriaPages(RefProperties, rowDef, pageSize, pages);
             return CriteriaOperator.Or(operators);
 
         }
 
-        private List<CriteriaOperator> BuildCriteriaPages(KeyValuePair<int, PropertyInfo> RefProperties, RowDef rowDef, int pageSize, int pages)
+        private List<CriteriaOperator> BuildCriteriaPages(KeyValuePair<int, CustomPropertyInfo> RefProperties, RowDef rowDef, int pageSize, int pages)
         {
             List<CriteriaOperator> operators = new List<CriteriaOperator>();
             for (int i = 0; i < pages; i++)
@@ -341,7 +342,7 @@ namespace XafImportApiWithTest.Module.Import
                 .ToList();
         }
     }
-    public class PropertyDetails
+    public class PropertyDetail
     {
         public Type OwnerType { get; set; }
         public Type PropertyType { get; set; }
@@ -358,7 +359,7 @@ namespace XafImportApiWithTest.Module.Import
         }
         public SpreadsheetService()
         {
-            
+
         }
 
         public RowDef GetData(Worksheet worksheet, ITypesInfo typesInfo, Type spreadSheetType)
@@ -367,7 +368,7 @@ namespace XafImportApiWithTest.Module.Import
             RowDef rowDef = new RowDef();
 
             GetRowDefinitionProperties(spreadSheetType, Headers, rowDef);
-            rowDef.Rows= GetValues(worksheet);
+            rowDef.Rows = GetValues(worksheet);
 
             return rowDef;
         }
@@ -427,37 +428,52 @@ namespace XafImportApiWithTest.Module.Import
             allRowsData.Remove(allRowsData.First());
             return allRowsData;
         }
-        private  void GetRowDefinitionProperties(Type spreadSheetType, List<string> Headers, RowDef rowDef)
+        private void GetRowDefinitionProperties(Type spreadSheetType, List<string> Headers, RowDef rowDef)
         {
-            Dictionary<string, List<PropertyDetails>> propertyDetails = GetPropertyDetails(spreadSheetType, Headers);
+            Dictionary<string, List<PropertyDetail>> propertyDetails = GetPropertyDetails(spreadSheetType, Headers);
 
-            
+
 
             int Index = 0;
-            foreach (KeyValuePair<string, List<PropertyDetails>> PropertyAndPaths in propertyDetails)
+            foreach (KeyValuePair<string, List<PropertyDetail>> PropertyAndPaths in propertyDetails)
             {
                 if (PropertyAndPaths.Value.Count() > 1)
                 {
-                    PropertyDetails LastSegment = PropertyAndPaths.Value.Last();
-                    PropertyDetails RootProperty = PropertyAndPaths.Value[0];
-                    PropertyInfo PropertyInfoInstance = new PropertyInfo() { PropertyName = RootProperty.PropertyName, PropertyType = RootProperty.PropertyType.FullName, ReferencePropertyLookup = LastSegment.PropertyName, PropertyKind = PropertyKind.Reference };
+                    PropertyDetail LastSegment = PropertyAndPaths.Value.Last();
+                    PropertyDetail RootProperty = PropertyAndPaths.Value[0];
+                    CustomPropertyInfo PropertyInfoInstance = new CustomPropertyInfo() { PropertyName = RootProperty.PropertyName, PropertyType = RootProperty.PropertyType.FullName, ReferencePropertyLookup = LastSegment.PropertyName, PropertyKind = PropertyKind.Reference };
                     rowDef.Properties.Add(Index, PropertyInfoInstance);
                 }
                 else
                 {
-                    PropertyKind propertyKind= PropertyKind.Primitive;
+                    PropertyKind propertyKind = PropertyKind.Primitive;
                     if (PropertyAndPaths.Value.Last().PropertyType.IsEnum)
-                        propertyKind= PropertyKind.Enum;
+                        propertyKind = PropertyKind.Enum;
 
-                    rowDef.Properties.Add(Index, new PropertyInfo() { PropertyName = PropertyAndPaths.Key, PropertyType = PropertyAndPaths.Value.Last().PropertyType.FullName, PropertyKind = propertyKind });
+                    rowDef.Properties.Add(Index, new CustomPropertyInfo() { PropertyName = PropertyAndPaths.Key, PropertyType = PropertyAndPaths.Value.Last().PropertyType.FullName, PropertyKind = propertyKind });
                 }
                 Index++;
             }
         }
 
-        public Dictionary<string, List<PropertyDetails>> GetPropertyDetails(Type spreadSheetType, List<string> Headers)
+        public List<Type> GetPropertyDetailsUniqueTypes(Type spreadSheetType, List<string> Headers)
         {
-            Dictionary<string, List<PropertyDetails>> propertyDetails = new Dictionary<string, List<PropertyDetails>>();
+
+            Dictionary<string, List<PropertyDetail>> Properties = GetPropertyDetails(spreadSheetType, Headers.ToArray());
+
+            IEnumerable<IEnumerable<Type>> Types = Properties.Select(p => p.Value.Select(d => d.OwnerType));
+
+            return Types.SelectMany(t => t).Distinct().ToList();
+        }
+        public Dictionary<string, List<PropertyDetail>> GetPropertyDetails(Type spreadSheetType, List<string> Headers)
+        {
+
+
+            return GetPropertyDetails(spreadSheetType, Headers.ToArray());
+        }
+        public Dictionary<string, List<PropertyDetail>> GetPropertyDetails(Type spreadSheetType, params string[] Headers)
+        {
+            Dictionary<string, List<PropertyDetail>> propertyDetails = new Dictionary<string, List<PropertyDetail>>();
             foreach (var item in Headers)
             {
                 propertyDetails.Add(item, GetPropertyDetails(item, spreadSheetType));
@@ -508,17 +524,17 @@ namespace XafImportApiWithTest.Module.Import
         /// <param name="currentType">The owner type</param>
         /// <returns></returns>
         /// <exception cref="Exception">Throws an exception if a property is not found in a type</exception>
-        public List<PropertyDetails> GetPropertyDetails(string propertyPath,Type currentType)
+        public List<PropertyDetail> GetPropertyDetails(string propertyPath, Type currentType)
         {
-            var detailsList = new List<PropertyDetails>();
+            var detailsList = new List<PropertyDetail>();
             string[] properties = propertyPath.Split('.');
-            
+
 
             foreach (string propertyName in properties)
             {
                 System.Reflection.PropertyInfo propertyInfo = currentType.GetProperty(propertyName);
 
-                if(propertyInfo==null)
+                if (propertyInfo == null)
                     throw new Exception($"Property {propertyName} not found on {currentType.Name}.");
 
 
@@ -526,9 +542,9 @@ namespace XafImportApiWithTest.Module.Import
                 Type PropertyType = null; ;
                 if (isNullable)
                 {
-                  
+
                     PropertyType = Nullable.GetUnderlyingType(propertyInfo.PropertyType);
-                    if(PropertyType==null)
+                    if (PropertyType == null)
                     {
                         PropertyType = propertyInfo.PropertyType;
                     }
@@ -537,8 +553,8 @@ namespace XafImportApiWithTest.Module.Import
                 {
                     PropertyType = propertyInfo.PropertyType;
                 }
-               
-              
+
+
 
 
                 if (propertyInfo == null)
@@ -546,7 +562,7 @@ namespace XafImportApiWithTest.Module.Import
                     throw new Exception($"Property {propertyName} not found on {currentType.Name}.");
                 }
 
-                var details = new PropertyDetails
+                var details = new PropertyDetail
                 {
                     OwnerType = currentType,
                     PropertyType = PropertyType,//propertyInfo.PropertyType,

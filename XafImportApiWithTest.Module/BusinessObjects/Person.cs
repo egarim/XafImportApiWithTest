@@ -12,6 +12,8 @@ namespace XafImportApiWithTest.Module.BusinessObjects
         public Person(Session session) : base(session)
         { }
 
+        string code;
+        Country country;
         string lastName;
         string name;
 
@@ -27,6 +29,19 @@ namespace XafImportApiWithTest.Module.BusinessObjects
         {
             get => lastName;
             set => SetPropertyValue(nameof(LastName), ref lastName, value);
+        }
+
+        public Country Country
+        {
+            get => country;
+            set => SetPropertyValue(nameof(Country), ref country, value);
+        }
+        
+        [Size(SizeAttribute.DefaultStringMappingFieldSize)]
+        public string Code
+        {
+            get => code;
+            set => SetPropertyValue(nameof(Code), ref code, value);
         }
 
     }
