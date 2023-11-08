@@ -77,6 +77,10 @@ namespace XafImportApiWithTest.Win.Controllers
 					}
 
 					DevExpress.Spreadsheet.Worksheet destinationWorksheet = sheet.Workbook.Worksheets.FirstOrDefault(w => w.Name == propertyName);
+					
+					destinationWorksheet.Cells.FillColor = System.Drawing.Color.White;
+					destinationWorksheet.Cells.Clear();
+
 					Type mainObjectType = typeof(MainObject);
 
 
@@ -94,22 +98,45 @@ namespace XafImportApiWithTest.Win.Controllers
 					var connectionProvider = XpoDefault.GetConnectionProvider(connectionString, DevExpress.Xpo.DB.AutoCreateOption.SchemaAlreadyExists);
 					SimpleDataLayer simpleDataLayer = new SimpleDataLayer(connectionProvider);
 					UnitOfWork unitOfWork = new UnitOfWork(simpleDataLayer);
-					var View = propertyType.CreateViewWithProperties(unitOfWork, null);
+					var View = propertyType.CreateViewWithProperties(unitOfWork, criteria); // change criteria for null for more performance
 					
 					List<object> objectData = new List<object>();
 
 					var defaultPropertyAttribute = View.ObjectClassInfo.FindAttributeInfo(typeof(DefaultPropertyAttribute)) as DefaultPropertyAttribute;
 					string defaultProperty = defaultPropertyAttribute != null ? defaultPropertyAttribute.Name : rowProperty.Value.ReferencePropertyLookup;
-					
+
 					foreach (ViewRecord record in View)
 					{
 						objectData.Add(record[defaultProperty]);
 					}
-					
+
+					int startIndex = 0;
+					List<object> objectsToAdd = new List<object>();
+
+					foreach (var row in RowDef.Rows)
+					{
+						startIndex++;
+						if (!objectData.Contains(row[rowProperty.Key].ToString()))
+						{
+							objectsToAdd.Add(row[rowProperty.Key]);
+						}
+					};
+
 					destinationWorksheet.Cells[0, 0].Value = defaultProperty;
 
 
 					destinationWorksheet.Import(objectData, 1, 0, true);
+
+
+			
+					foreach (var obj in objectsToAdd)
+					{
+
+						destinationWorksheet.Rows.Insert(1);
+						destinationWorksheet.Cells[1, 0].Value = obj.ToString();
+						destinationWorksheet.Cells[1, 0].FillColor = System.Drawing.Color.Red;
+					}
+
 
 				}
 			}
