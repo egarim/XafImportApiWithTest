@@ -20,6 +20,7 @@ using System.ComponentModel;
 using DevExpress.XtraSpreadsheet.Layout;
 using DevExpress.DataAccess.Native.Json;
 using System.Reflection;
+using System.Drawing;
 
 namespace XafImportApiWithTest.Module.Import
 {
@@ -718,18 +719,37 @@ namespace XafImportApiWithTest.Module.Import
                     foreach(var rowProperty in RowDef.Properties)
                     {
                         string text = initialSheet.Cells[0, rowProperty.Key].DisplayText;
+                        string referencePropertyText = GetSecondPartAfterDot(text);
 
 						if (text.Contains(property.Key) && text.Contains(property.Value.OwnerType.Name))
                         {
-							foreach (var row in RowDef.Rows)
-							{
-                                if(row[rowProperty.Key] != null)
-                                    criteriaValues.Add(row[rowProperty.Key]);
+                            if (referencePropertyText.Contains("."))
+                            {
+                                if (referencePropertyText.Contains(property.Key))
+                                {
+									foreach (var row in RowDef.Rows)
+									{
+										if (row[rowProperty.Key] != null)
+											criteriaValues.Add(row[rowProperty.Key]);
 
+									}
+								}
+                            } 
+                            else
+                            {
+								if (referencePropertyText.Equals(property.Key))
+								{
+									foreach (var row in RowDef.Rows)
+									{
+										if (row[rowProperty.Key] != null)
+											criteriaValues.Add(row[rowProperty.Key]);
+
+									}
+								}
 							}
+							
 						}
-                    }
-					
+                    }					
 
 					CriteriaOperator criteria = new InOperator(property.Key, criteriaValues);
 
@@ -758,10 +778,36 @@ namespace XafImportApiWithTest.Module.Import
                         objectData.Add(record[getRecordBy]);
                     }
 
-
-
                     int rowIndex = destinationWorksheet.GetUsedRange().BottomRowIndex + 1;
                     destinationWorksheet.Import(objectData, rowIndex, startColumn, true);
+
+                    List<object> newData = new List<object>();
+
+                    foreach (var objectInSheet in criteriaValues)
+                    {
+                        if (!objectData.Contains(objectInSheet.ToString()))
+                        {
+                            if(!newData.Contains(objectInSheet.ToString()))
+                                newData.Add(objectInSheet);
+                        }
+                    }
+
+                    if(newData.Count > 0)
+                    {
+                        rowIndex = destinationWorksheet.GetUsedRange().BottomRowIndex + 1;
+						destinationWorksheet.Import(newData, rowIndex, startColumn, true);
+                        int lastIndex = destinationWorksheet.GetUsedRange().BottomRowIndex;
+						CellRange rangeA1D3 = destinationWorksheet.Range.FromLTRB(startColumn, rowIndex, startColumn, lastIndex);
+
+						Color fillColor = Color.Red;
+
+						rangeA1D3.FillColor = fillColor;
+					}
+                   
+
+                    newData.Clear();
+
+
                     objectData.Clear();
                     startColumn++;
                 }
@@ -770,6 +816,17 @@ namespace XafImportApiWithTest.Module.Import
             return sheet;
 		}
 
+		private string GetSecondPartAfterDot(string input)
+		{
+			string[] parts = input.Split('.');
+
+			if (parts.Length >= 2)
+			{
+                return string.Join(".", parts, 1, parts.Length - 1);
+			}
+
+			return input;
+		}
 
 		public Worksheet AnalyzeSheetOld(IObjectSpace objectSpace, Worksheet sheet , UnitOfWork unitOfWork)
         {
