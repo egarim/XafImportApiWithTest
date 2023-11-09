@@ -727,7 +727,7 @@ namespace XafImportApiWithTest.Module.Import
 
 						var targetType = currentAssembly.GetTypes().FirstOrDefault(type => type.Name == typeOfNestedProperty);
 						//CriteriaOperator criteria = new InOperator(getRecordBy, values);
-						view = targetType.CreateViewWithProperties(unitOfWork, criteria);
+						view = targetType.CreateViewWithProperties(unitOfWork, null);
 					}
 
 					foreach (ViewRecord record in view)
