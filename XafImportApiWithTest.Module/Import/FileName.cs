@@ -716,10 +716,24 @@ namespace XafImportApiWithTest.Module.Import
 
                     List<object> criteriaValues = new List<object>();
 
-                    foreach(var rowProperty in RowDef.Properties)
+
+					foreach (var rowProperty in RowDef.Properties)
                     {
                         string text = initialSheet.Cells[0, rowProperty.Key].DisplayText;
                         string referencePropertyText = GetSecondPartAfterDot(text);
+
+						if (sheetStructure.Properties.Count == 1)
+						{
+                            if (text.Equals(sheetStructure.MainSheetProperty))
+                            {
+								foreach (var row in RowDef.Rows)
+								{
+									if (row[rowProperty.Key] != null)
+										criteriaValues.Add(row[rowProperty.Key]);
+								}
+								break;
+                            }
+					    }
 
 						if (text.Contains(property.Key) && text.Contains(property.Value.OwnerType.Name))
                         {
@@ -731,7 +745,6 @@ namespace XafImportApiWithTest.Module.Import
 									{
 										if (row[rowProperty.Key] != null)
 											criteriaValues.Add(row[rowProperty.Key]);
-
 									}
 								}
                             } 
@@ -743,7 +756,6 @@ namespace XafImportApiWithTest.Module.Import
 									{
 										if (row[rowProperty.Key] != null)
 											criteriaValues.Add(row[rowProperty.Key]);
-
 									}
 								}
 							}
