@@ -43,6 +43,7 @@ namespace XafImportApiWithTest.Module.BusinessObjects
             get => name;
             set => SetPropertyValue(nameof(Name), ref name, value);
         }
+        string typeFullName;
         string name;
         private byte[] data;
         [EditorAlias("DevExpress.ExpressApp.Office.Win.SpreadsheetPropertyEditor")]
@@ -51,6 +52,14 @@ namespace XafImportApiWithTest.Module.BusinessObjects
             get { return data; }
             set { SetPropertyValue(nameof(Data), ref data, value); }
         }
+        
+        [Size(SizeAttribute.DefaultStringMappingFieldSize)]
+        public string TypeFullName
+        {
+            get => typeFullName;
+            set => SetPropertyValue(nameof(TypeFullName), ref typeFullName, value);
+        }
+
         public Workbook GetSpreadSheet()
         {
             Workbook workbook = new Workbook();

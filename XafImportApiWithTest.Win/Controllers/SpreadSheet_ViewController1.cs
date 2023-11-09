@@ -63,8 +63,9 @@ namespace XafImportApiWithTest.Win.Controllers
             DevExpress.Spreadsheet.Workbook workbook = currentObj.GetSpreadSheet();
 
 			SpreadsheetService spreadsheetService = new SpreadsheetService();
-
-            DevExpress.Spreadsheet.Worksheet analyzedSheets = spreadsheetService.AnalyzeSheet(View.ObjectSpace, workbook.Worksheets[0], unitOfWork);
+            var spreadSheetType = this.ObjectSpace.TypesInfo.FindTypeInfo(currentObj.TypeFullName);
+            DevExpress.Spreadsheet.Worksheet analyzedSheets = spreadsheetService.AnalyzeSheet(View.ObjectSpace, workbook.Worksheets[0], unitOfWork, spreadSheetType.Type);
+            //DevExpress.Spreadsheet.Worksheet analyzedSheets = spreadsheetService.AnalyzeSheet(View.ObjectSpace, workbook.Worksheets[0], unitOfWork);
 
 			using (MemoryStream ms = new MemoryStream())
 			{

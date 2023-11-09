@@ -682,15 +682,15 @@ namespace XafImportApiWithTest.Module.Import
 
 
         }
-		public Worksheet AnalyzeSheet(IObjectSpace objectSpace, Worksheet sheet, UnitOfWork unitOfWork)
+		public Worksheet AnalyzeSheet(IObjectSpace objectSpace, Worksheet sheet, UnitOfWork unitOfWork,Type type)
 		{
 			DevExpress.Spreadsheet.Worksheet initialSheet = sheet.Workbook.Worksheets[0];
 
 			SpreadsheetService spreadsheetService = new SpreadsheetService();
-			var RowDef = spreadsheetService.GetData(initialSheet, objectSpace.TypesInfo, typeof(Marriage));
+			var RowDef = spreadsheetService.GetData(initialSheet, objectSpace.TypesInfo, type);
 
 			var Headers = spreadsheetService.GetHeaders(initialSheet);
-			var PropertyDetails = spreadsheetService.GetPropertyDetails(typeof(Marriage), Headers);
+			var PropertyDetails = spreadsheetService.GetPropertyDetails(type, Headers);
 			var NestedSheetStructure = spreadsheetService.GetNestedSheetStructure(PropertyDetails);
 
 			foreach (var sheetStructure in NestedSheetStructure)
