@@ -16,7 +16,10 @@ using System.IO;
 using DevExpress.XtraSpreadsheet.Import.Xls;
 using XafImportApiWithTest.Module.BusinessObjects;
 using DevExpress.Office.Utils;
-
+using System.ComponentModel;
+using DevExpress.XtraSpreadsheet.Layout;
+using DevExpress.DataAccess.Native.Json;
+using System.Reflection;
 
 namespace XafImportApiWithTest.Module.Import
 {
@@ -678,6 +681,148 @@ namespace XafImportApiWithTest.Module.Import
 
 
         }
+		public Worksheet AnalyzeSheet(IObjectSpace objectSpace, Worksheet sheet, UnitOfWork unitOfWork)
+		{
+			DevExpress.Spreadsheet.Worksheet initialSheet = sheet.Workbook.Worksheets[0];
+
+			SpreadsheetService spreadsheetService = new SpreadsheetService();
+			var RowDef = spreadsheetService.GetData(initialSheet, objectSpace.TypesInfo, typeof(Marriage));
+
+			var Headers = spreadsheetService.GetHeaders(initialSheet);
+			var PropertyDetails = spreadsheetService.GetPropertyDetails(typeof(Marriage), Headers);
+			var NestedSheetStructure = spreadsheetService.GetNestedSheetStructure(PropertyDetails);
+
+			foreach (var sheetStructure in NestedSheetStructure)
+			{
+
+				string propertyName = sheetStructure.Type.Name;
+				if (!sheet.Workbook.Worksheets.Contains(propertyName))
+				{
+					sheet.Workbook.Worksheets.Add().Name = propertyName;
+				}
+
+				DevExpress.Spreadsheet.Worksheet destinationWorksheet = sheet.Workbook.Worksheets.FirstOrDefault(w => w.Name == propertyName);
+
+				destinationWorksheet.Cells.FillColor = System.Drawing.Color.White;
+				destinationWorksheet.Cells.Clear();
+
+                //CriteriaOperator criteria = new InOperator(getRecordBy, values);
+                XPView view = sheetStructure.Type.CreateViewWithProperties(unitOfWork, null);
+
+                int startColumn = 0;
+                foreach (var property in sheetStructure.Properties)
+                {
+                    destinationWorksheet.Cells[0, startColumn].Value = property.Key;
+
+                    List<object> objectData = new List<object>();
+
+                    string getRecordBy = property.Key;
+
+					if (property.Key.Contains("."))
+					{
+						string[] nesetedProperties = property.Key.Split('.');
+						getRecordBy = nesetedProperties[nesetedProperties.Length - 1];
+						string typeOfNestedProperty = nesetedProperties[nesetedProperties.Length - 2];
+						var currentAssembly = Assembly.GetExecutingAssembly();
+
+						var targetType = currentAssembly.GetTypes().FirstOrDefault(type => type.Name == typeOfNestedProperty);
+						//CriteriaOperator criteria = new InOperator(getRecordBy, values);
+						view = targetType.CreateViewWithProperties(unitOfWork, criteria);
+					}
+
+					foreach (ViewRecord record in view)
+                    {
+                        objectData.Add(record[getRecordBy]);
+                    }
+                    destinationWorksheet.Import(objectData, 1, startColumn, true);
+                    objectData.Clear();
+                    startColumn++;
+                }
+
+            }
+            return sheet;
+		}
+
+
+		public Worksheet AnalyzeSheetOld(IObjectSpace objectSpace, Worksheet sheet , UnitOfWork unitOfWork)
+        {
+			DevExpress.Spreadsheet.Worksheet initialSheet = sheet.Workbook.Worksheets[0];
+
+			SpreadsheetService spreadsheetService = new SpreadsheetService();
+			var RowDef = spreadsheetService.GetData(initialSheet, objectSpace.TypesInfo, typeof(MainObject));
+
+			foreach (var rowProperty in RowDef.Properties)
+			{
+				if (rowProperty.Value.PropertyKind == PropertyKind.Reference)
+				{
+					string propertyName = rowProperty.Value.PropertyName;
+					if (!sheet.Workbook.Worksheets.Contains(propertyName))
+					{
+						sheet.Workbook.Worksheets.Add().Name = propertyName;
+					}
+
+					DevExpress.Spreadsheet.Worksheet destinationWorksheet = sheet.Workbook.Worksheets.FirstOrDefault(w => w.Name == propertyName);
+
+					destinationWorksheet.Cells.FillColor = System.Drawing.Color.White;
+					destinationWorksheet.Cells.Clear();
+
+					Type mainObjectType = typeof(MainObject);
+
+
+					System.Reflection.PropertyInfo propertyInfo = mainObjectType.GetProperty(propertyName);
+					Type propertyType = propertyInfo.PropertyType;
+					List<object> values = new List<object>();
+
+					foreach (var row in RowDef.Rows)
+					{
+						values.Add(row[rowProperty.Key]);
+					};
+					CriteriaOperator criteria = new InOperator(rowProperty.Value.ReferencePropertyLookup, values);
+
+					var View = propertyType.CreateViewWithProperties(unitOfWork, criteria); // change criteria for null for more performance
+
+					List<object> objectData = new List<object>();
+
+					var defaultPropertyAttribute = View.ObjectClassInfo.FindAttributeInfo(typeof(DefaultPropertyAttribute)) as DefaultPropertyAttribute;
+					string defaultProperty = defaultPropertyAttribute != null ? defaultPropertyAttribute.Name : rowProperty.Value.ReferencePropertyLookup;
+
+					foreach (ViewRecord record in View)
+					{
+						objectData.Add(record[defaultProperty]);
+					}
+
+					int startIndex = 0;
+					List<object> objectsToAdd = new List<object>();
+
+					foreach (var row in RowDef.Rows)
+					{
+						startIndex++;
+						if (!objectData.Contains(row[rowProperty.Key].ToString()))
+						{
+							objectsToAdd.Add(row[rowProperty.Key]);
+						}
+					};
+
+					destinationWorksheet.Cells[0, 0].Value = defaultProperty;
+
+
+					destinationWorksheet.Import(objectData, 1, 0, true);
+
+
+
+					foreach (var obj in objectsToAdd)
+					{
+
+						destinationWorksheet.Rows.Insert(1);
+						destinationWorksheet.Cells[1, 0].Value = obj.ToString();
+						destinationWorksheet.Cells[1, 0].FillColor = System.Drawing.Color.Red;
+					}
+
+
+				}
+			}
+            return sheet;
+		}
     }
 
 }

@@ -13,11 +13,14 @@ using DevExpress.Persistent.Base;
 using DevExpress.Persistent.Validation;
 using DevExpress.Spreadsheet;
 using DevExpress.Utils.Extensions;
+using DevExpress.Xpo;
 using DevExpress.XtraRichEdit.Model;
 using DevExpress.XtraSpreadsheet;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Data;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Windows.Media;
@@ -50,67 +53,33 @@ namespace XafImportApiWithTest.Win.Controllers
 
 		private void Analyze_Execute(object sender, SimpleActionExecuteEventArgs e)
 		{
-			IObjectSpace objectSpace = View.ObjectSpace;
-			DateTime startTime = DateTime.Now;
-			SpreadSheet spreedSheetObj = (SpreadSheet)e.CurrentObject;
-            DevExpress.Spreadsheet.Worksheet sheet = spreadsheetPropertyEditor.SpreadsheetControl.ActiveWorksheet.Workbook.Worksheets[0];
+			string connectionString = this.Application.ConnectionString;
+			var connectionProvider = XpoDefault.GetConnectionProvider(connectionString, DevExpress.Xpo.DB.AutoCreateOption.SchemaAlreadyExists);
+			SimpleDataLayer simpleDataLayer = new SimpleDataLayer(connectionProvider);
+			UnitOfWork unitOfWork = new UnitOfWork(simpleDataLayer);
 
-			DevExpress.Spreadsheet.Worksheet initialSheet = sheet.Workbook.Worksheets[0];
+			SpreadSheet currentObj = (SpreadSheet)e.CurrentObject;
+
+            DevExpress.Spreadsheet.Workbook workbook = currentObj.GetSpreadSheet();
 
 			SpreadsheetService spreadsheetService = new SpreadsheetService();
-			var RowDef = spreadsheetService.GetData(initialSheet, objectSpace.TypesInfo, typeof(MainObject));
 
-			foreach(var rowProperty in RowDef.Properties)
+            DevExpress.Spreadsheet.Worksheet analyzedSheets = spreadsheetService.AnalyzeSheet(View.ObjectSpace, workbook.Worksheets[0], unitOfWork);
+
+			using (MemoryStream ms = new MemoryStream())
 			{
-				if(rowProperty.Value.PropertyKind == PropertyKind.Reference)
-				{
-					string propertyName = rowProperty.Value.PropertyName;
-					if (!sheet.Workbook.Worksheets.Contains(propertyName))
-					{
-						sheet.Workbook.Worksheets.Add().Name = propertyName;
-					}
+				analyzedSheets.Workbook.SaveDocument(ms, DevExpress.Spreadsheet.DocumentFormat.OpenXml);
 
-					DevExpress.Spreadsheet.Worksheet destinationWorksheet = sheet.Workbook.Worksheets.FirstOrDefault(w => w.Name == propertyName);
-					Type mainObjectType = typeof(MainObject);
+				ms.Position = 0;
 
+				byte[] byte_array = new byte[ms.Length];
+				ms.Read(byte_array, 0, byte_array.Length);
 
-					System.Reflection.PropertyInfo propertyInfo = mainObjectType.GetProperty(propertyName);
-					Type propertyType = propertyInfo.PropertyType;
-					List<object> values = new List<object>();
-					foreach (var row in RowDef.Rows)
-					{
-						values.Add(row[rowProperty.Key]);
-					};
-					CriteriaOperator criteria = new InOperator(rowProperty.Value.ReferencePropertyLookup, values);
-					var objectData = objectSpace.GetObjects(propertyType, criteria);
-					var firstObject = objectData[0];
-					var propertyNames = firstObject?.GetType()
-						.GetProperties()
-						.Select(p => p.Name)
-						.Where(e =>  e != "This" && e != "Loading" && e != "ClassInfo" && e != "Session" && e != "IsLoading" && e != "IsDeleted")
-						.ToArray();
+				currentObj.Data = byte_array;
+				View.Refresh();
 
-
-					for (int columnIndex = 0; columnIndex < propertyNames.Length; columnIndex++)
-					{
-						destinationWorksheet.Cells[0, columnIndex].Value = propertyNames[columnIndex];
-					}
-
-					var importOptions = new DataSourceImportOptions()
-					{
-						PropertyNames = propertyNames
-					};
-
-
-					destinationWorksheet.Import(objectData, 1, 0, importOptions);
-
-				}
+				//View.ObjectSpace.CommitChanges();
 			}
-
-	
-
-
-
 			//RowDef.ObjectType = typeof(MainObject).FullName;
 		}
 		protected override void OnActivated()
