@@ -706,7 +706,6 @@ namespace XafImportApiWithTest.Module.Import
 				destinationWorksheet.Cells.FillColor = System.Drawing.Color.White;
 				destinationWorksheet.Cells.Clear();
 
-                //CriteriaOperator criteria = new InOperator(getRecordBy, values);
                 XPView view = sheetStructure.Type.CreateViewWithProperties(unitOfWork, null);
 
                 int startColumn = 0;
@@ -714,7 +713,29 @@ namespace XafImportApiWithTest.Module.Import
                 {
                     destinationWorksheet.Cells[0, startColumn].Value = property.Key;
 
-                    List<object> objectData = new List<object>();
+                    List<object> criteriaValues = new List<object>();
+
+                    foreach(var rowProperty in RowDef.Properties)
+                    {
+                        string text = initialSheet.Cells[0, rowProperty.Key].DisplayText;
+
+						if (text.Contains(property.Key) && text.Contains(property.Value.OwnerType.Name))
+                        {
+							foreach (var row in RowDef.Rows)
+							{
+                                if(row[rowProperty.Key] != null)
+                                    criteriaValues.Add(row[rowProperty.Key]);
+
+							}
+						}
+                    }
+					
+
+					CriteriaOperator criteria = new InOperator(property.Key, criteriaValues);
+
+                    view.Criteria = criteria;
+
+					List<object> objectData = new List<object>();
 
                     string getRecordBy = property.Key;
 
@@ -726,15 +747,21 @@ namespace XafImportApiWithTest.Module.Import
 						var currentAssembly = Assembly.GetExecutingAssembly();
 
 						var targetType = currentAssembly.GetTypes().FirstOrDefault(type => type.Name == typeOfNestedProperty);
-						//CriteriaOperator criteria = new InOperator(getRecordBy, values);
-						view = targetType.CreateViewWithProperties(unitOfWork, null);
+
+						CriteriaOperator newCriteria = new InOperator(getRecordBy, criteriaValues);
+
+						view = targetType.CreateViewWithProperties(unitOfWork, newCriteria);
 					}
 
 					foreach (ViewRecord record in view)
                     {
                         objectData.Add(record[getRecordBy]);
                     }
-                    destinationWorksheet.Import(objectData, 1, startColumn, true);
+
+
+
+                    int rowIndex = destinationWorksheet.GetUsedRange().BottomRowIndex + 1;
+                    destinationWorksheet.Import(objectData, rowIndex, startColumn, true);
                     objectData.Clear();
                     startColumn++;
                 }
