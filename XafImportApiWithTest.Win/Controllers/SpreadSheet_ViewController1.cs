@@ -20,6 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -53,7 +54,8 @@ namespace XafImportApiWithTest.Win.Controllers
 
 		private void Analyze_Execute(object sender, SimpleActionExecuteEventArgs e)
 		{
-			string connectionString = this.Application.ConnectionString;
+            var startDate = DateTime.Now;
+            string connectionString = this.Application.ConnectionString;
 			var connectionProvider = XpoDefault.GetConnectionProvider(connectionString, DevExpress.Xpo.DB.AutoCreateOption.SchemaAlreadyExists);
 			SimpleDataLayer simpleDataLayer = new SimpleDataLayer(connectionProvider);
 			UnitOfWork unitOfWork = new UnitOfWork(simpleDataLayer);
@@ -81,8 +83,12 @@ namespace XafImportApiWithTest.Win.Controllers
 
 				//View.ObjectSpace.CommitChanges();
 			}
-			//RowDef.ObjectType = typeof(MainObject).FullName;
-		}
+        
+            var endDate = DateTime.Now;
+            var TotalSeconds = (endDate - startDate).TotalSeconds;
+            Debug.WriteLine("Total seconds:" + TotalSeconds);
+            //RowDef.ObjectType = typeof(MainObject).FullName;
+        }
 		protected override void OnActivated()
 		{
 			base.OnActivated();
